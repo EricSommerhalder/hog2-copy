@@ -2404,62 +2404,62 @@ void TeachingExample()
  * @param state: the game state
  * @return: Array of all neighbours
  */
-int** getNeighbours(int* state);
+MNPuzzleState<4,4>* getNeighbours(MNPuzzleState<4,4> state);
 
 /**
  * Helper function which prints a game state to the command line.
  * @param state: the game state
  */
-void printGameState(int * state);
+void printGameState(MNPuzzleState<4,4> state);
 
 /**
  * Returns the index of the empty tile of a game state .
  * @param state: the game state
  * @return: The index of the empty tile/0
  */
-int findZero (int* state);
+//int findZero (int* state);
 
 /**
  * Helper function that finds the neighbour of a game state, where the empty tile is moved to the left.
  * @param state: the game state
  * @return: the left neighbour
  */
-int * getLeftNeighbour(int* state);
+MNPuzzleState<4,4> getLeftNeighbour(MNPuzzleState<4,4> state);
 
 /**
  * Helper function that finds the neighbour of a game state, where the empty tile is moved to the right.
  * @param state: the game state
  * @return: the right neighbour
  */
-int * getRightNeighbour(int* state);
+MNPuzzleState<4,4> getRightNeighbour(MNPuzzleState<4,4> state);
 
 /**
  * Helper function that finds the neighbour of a game state, where the empty tile is moved up.
  * @param state: the game state
  * @return: the upper neighbour
  */
-int * getUpNeighbour(int* state);
+MNPuzzleState<4,4> getUpNeighbour(MNPuzzleState<4,4> state);
 
 /**
  * Helper function that finds the neighbour of a game state, where the empty tile is moved down.
  * @param state: the game state
  * @return: the lower neighbour
  */
-int * getDownNeighbour(int* state);
+MNPuzzleState<4,4> getDownNeighbour(MNPuzzleState<4,4> state);
 
 /**
  * Finds the scores for all game states in an array.
  * @param arr: the Array of game states
  * @return: an array of all scores
  */
-double * getNeighbourScores(int **arr);
+double * getNeighbourScores(MNPuzzleState<4,4> *arr);
 
 /**
  * Finds the score for a game state.
  * @param state: the game state
  * @return: the score
  */
-double getScore(int *state);
+double getScore(MNPuzzleState<4,4> state);
 
 /**
  * Starting from a given game state, this function loops through the neighbours in a greedy local search until no neigh-
@@ -2467,138 +2467,142 @@ double getScore(int *state);
  * @return: return code
  */
 double solve(MNPuzzleState<4,4> state);
-MNPuzzleState<4,4> getPuzzleFromState(int* state);
+void setHeuristics();
+MNPuzzle<4, 4> mnp;
+Heuristic<MNPuzzleState<4, 4>> h;
+PermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>> *pdb1;
+PermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>> *pdb2;
+PermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>> *pdb3;
 
 int main(int argc, char* argv[]) {
-    int curr[16] = {0, 13, 15, 7, 11, 12, 9, 5, 6, 14, 2, 1, 4, 8, 10, 3};
-    int curr_score = getScore(curr);
-    while (true) {
-        printGameState(curr);
-        int** neighbours = getNeighbours(curr);
-        double * neighbour_scores = getNeighbourScores(neighbours);
-        int index = -1;
-        for (int i = 0; i < 4; i++){
-            if (neighbour_scores[i] > curr_score){
-                curr_score = neighbour_scores[i];
-                index = i;
+    setHeuristics();
+    MNPuzzleState<4,4> curr;
+    for (int jj = 0; jj < 100; jj++) {
+        curr = GetSTPInstance(jj);
+
+        int curr_score = getScore(curr);
+        while (true) {
+            printGameState(curr);
+            MNPuzzleState<4, 4> *neighbours = getNeighbours(curr);
+            double *neighbour_scores = getNeighbourScores(neighbours);
+            int index = -1;
+            for (int i = 0; i < 4; i++) {
+                if (neighbour_scores[i] > curr_score) {
+                    curr_score = neighbour_scores[i];
+                    index = i;
+                }
+                printGameState(neighbours[i]);
+                cout << "\nScore: " << neighbour_scores[i] << "\n";
             }
-            printGameState(neighbours[i]);
-            cout << "\nScore: " << neighbour_scores[i] << "\n";
-        }
-        if (index == -1){
-            break;
-        }
-        for (int i = 0; i<16; i++){
-            curr[i] = neighbours[index][i];
+            if (index == -1) {
+                cout << "----------------------------------------\nFOUND LOCAL MAXIMUM\n";
+                printGameState(curr);
+                cout << "----------------------------------------\n";
+                break;
+            }
+            for (int i = 0; i < 16; i++) {
+                curr.puzzle[i] = neighbours[index].puzzle[i];
+            }
+            curr.blank = neighbours[index].blank;
         }
     }
     return 0;
 }
 
-int** getNeighbours(int* state) {
-    int** r = new int*[4];
+MNPuzzleState<4,4>* getNeighbours(MNPuzzleState<4,4> state) {
+    MNPuzzleState<4,4>* r = new MNPuzzleState<4,4>[4];
     r[0] = getLeftNeighbour(state);
     r[1] = getRightNeighbour(state);
     r[2] = getUpNeighbour(state);
     r[3] = getDownNeighbour(state);
     return r ;
 }
-int * getLeftNeighbour(int* state) {
-    int * r = new int[16];
-    memcpy(r, state, 16* sizeof(int));
-    int pos = findZero(r);
-    if (pos % 4 == 0){
-        return nullptr;
+MNPuzzleState<4,4> getLeftNeighbour(MNPuzzleState<4,4> state) {
+    MNPuzzleState<4,4> r;
+    if (state.blank % 4 == 0) {
+        r.blank = -1;
+        return r;
     }
-    r[pos] = r[pos -1];
-    r[pos - 1] = 0;
+    for (int i = 0; i< 16; i++) {
+        r.puzzle[i] = state.puzzle[i];
+    }
+    r.blank = state.blank;
+    r.puzzle[r.blank] = r.puzzle[r.blank -1];
+    r.puzzle[r.blank - 1] = 0;
+    r.blank--;
     return r;
 
 }
-int * getRightNeighbour(int* state) {
-    int * r = new int[16];
-    memcpy(r, state, 16* sizeof(int));
-    int pos = findZero(r);
-    if (pos % 4 == 3){
-        return nullptr;
+MNPuzzleState<4,4> getRightNeighbour(MNPuzzleState<4,4> state) {
+    MNPuzzleState<4,4> r;
+    if (state.blank % 4 == 3) {
+        r.blank = -1;
+        return r;
     }
-    r[pos] = r[pos + 1];
-    r[pos + 1] = 0;
+    for (int i = 0; i< 16; i++) {
+        r.puzzle[i] = state.puzzle[i];
+    }
+    r.blank = state.blank;
+    r.puzzle[r.blank] = r.puzzle[r.blank +1];
+    r.puzzle[r.blank + 1] = 0;
+    r.blank++;
     return r;
 
 }
-int * getUpNeighbour(int* state) {
-    int * r = new int[16];
-    memcpy(r, state, 16* sizeof(int));
-    int pos = findZero(r);
-    if (pos < 4){
-        return nullptr;
+MNPuzzleState<4,4> getUpNeighbour(MNPuzzleState<4,4> state) {
+    MNPuzzleState<4,4> r;
+    if (state.blank < 4) {
+        r.blank = -1;
+        return r;
     }
-    r[pos] = r[pos -4];
-    r[pos - 4] = 0;
+    for (int i = 0; i< 16; i++) {
+        r.puzzle[i] = state.puzzle[i];
+    }
+    r.blank = state.blank;
+    r.puzzle[r.blank] = r.puzzle[r.blank - 4];
+    r.puzzle[r.blank - 4] = 0;
+    r.blank = r.blank - 4;
     return r;
 }
-int * getDownNeighbour(int* state) {
-    int * r = new int[16];
-    memcpy(r, state, 16* sizeof(int));
-    int pos = findZero(r);
-    if (pos > 11) {
-        return nullptr;
+MNPuzzleState<4,4> getDownNeighbour(MNPuzzleState<4,4> state) {
+    MNPuzzleState<4,4> r;
+    if (state.blank > 11) {
+        r.blank = -1;
+        return r;
     }
-    r[pos] = r[pos + 4];
-    r[pos + 4] = 0;
+    for (int i = 0; i< 16; i++) {
+        r.puzzle[i] = state.puzzle[i];
+    }
+    r.blank = state.blank;
+    r.puzzle[r.blank] = r.puzzle[r.blank + 4];
+    r.puzzle[r.blank + 4] = 0;
+    r.blank = r.blank + 4;
     return r;
 }
 
-
-int findZero (int* state) {
-    int r = 0;
-    for (int i = 0; i < 16; i++){
-        if (state[i] == 0){
-            r = i;
-            break;
-        }
-    }
-    return r;
-}
-double * getNeighbourScores(int **arr) {
+ double * getNeighbourScores(MNPuzzleState<4,4>* arr) {
     double* r = new double[4];
     for (int i = 0; i <4; i++){
         r[i] = getScore(arr[i]);
     }
     return r;
 }
-double getScore(int *state) {
+double getScore(MNPuzzleState<4,4> state) {
 
-    if (state == nullptr){
+    if (state.blank == -1){
         return -1;
     }
-    return solve(getPuzzleFromState(state));
+    return solve(state);
 }
-
-MNPuzzleState<4,4> getPuzzleFromState(int* state) {
-    MNPuzzleState<4, 4> s;
-    for (int x = 0; x < 16; x++)
-    {
-        s.puzzle[x] =state[x];
-        if (s.puzzle[x] == 0)
-            s.blank = x;
-    }
-    return s;
-}
-double solve(MNPuzzleState<4,4> state){
-    MNPuzzle<4, 4> mnp;
-    Heuristic<MNPuzzleState<4, 4>> h;
-
+void setHeuristics() {
+    MNPuzzleState<4, 4> goal;
     std::vector<int> p1 = {0, 1, 2, 3, 4, 5, 6, 7};
     std::vector<int> p2 = {0, 8, 9, 12, 13};
     std::vector<int> p3 = {0, 10, 11, 14, 15};
-    MNPuzzleState<4, 4> goal;
-    PermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>> *pdb1 = new LexPermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>>(&mnp, goal, p1);
-    PermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>> *pdb2 = new LexPermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>>(&mnp, goal, p2);
-    PermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>> *pdb3 = new LexPermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>>(&mnp, goal, p3);
-    std::vector<slideDir> path;
-    std::vector<MNPuzzleState<4, 4>> statepath;
+
+    pdb2 = new LexPermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>>(&mnp, goal, p2);
+    pdb3 = new LexPermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>>(&mnp, goal, p3);
+    pdb1 = new LexPermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>>(&mnp, goal, p1);
     if (pdb1->Load(prefix) == false)
     {
         pdb1->BuildPDB(goal, std::thread::hardware_concurrency());
@@ -2627,29 +2631,33 @@ double solve(MNPuzzleState<4,4> state){
     h.heuristics.push_back(pdb1);
     h.heuristics.push_back(pdb2);
     h.heuristics.push_back(pdb3);
+}
 
+double solve(MNPuzzleState<4,4> state){
+    MNPuzzleState<4, 4> goal;
+    std::vector<MNPuzzleState<4, 4>> statepath;
     Timer t2;
     TemplateAStar<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>> astar;
-    double pdbTime = 0, mdTime = 0, astarTime = 0;
     astar.SetHeuristic(&h);
     t2.StartTimer();
     astar.GetPath(&mnp, state, goal, statepath);
     t2.EndTimer();
-    printf("Problem solved; %1.2f elapsed" , t2.GetElapsedTime());
+    printf("Problem solved; %1.2f elapsed\n" , t2.GetElapsedTime());
     return t2.GetElapsedTime();
 }
-void printGameState(int* state) {
-    if (state == nullptr){
+
+void printGameState(MNPuzzleState<4,4> state) {
+    if (state.blank == -1){
         return;
     }
     cout << '\n';
     for (int i = 0; i < 4; i++){
         cout << '|';
         for (int j = 0; j <4; j++){
-            if (state[i*4 + j] < 10) {
+            if (state.puzzle[i*4 + j] < 10) {
                 cout << " ";
             }
-            cout << state[i*4 + j];
+            cout << state.puzzle[i*4 + j];
             cout << " ";
         }
         cout << "|\n";
