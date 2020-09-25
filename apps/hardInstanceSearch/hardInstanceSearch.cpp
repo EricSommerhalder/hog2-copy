@@ -200,14 +200,24 @@ PermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>> *pdb2;
 PermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>> *pdb3;
 
 int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        cout << "USAGE: ./hardInstanceSearch [instance number (between 0 and 99)]\n";
+        return 0;
+    }
     setHeuristics();
     MNPuzzleState<4,4> curr;
     int jj = atoi(argv[1]);
+    if (jj < 0 || jj > 99) {
+        cout << "USAGE: ./hardInstanceSearch [instance number (between 0 and 99)]\n";
+        return 0;
+    }
     curr = GetSTPInstance(jj);
 
-    int curr_score = getScore(curr);
+    double curr_score = getScore(curr);
     while (true) {
+        cout << "CURRENT GAME STATE\n\n";
         printGameState(curr);
+        cout << "\nCURRENT SCORE: " << curr_score << "\n\n";
         MNPuzzleState<4, 4> *neighbours = getNeighbours(curr);
         double *neighbour_scores = getNeighbourScores(neighbours);
         int index = -1;
@@ -216,19 +226,23 @@ int main(int argc, char* argv[]) {
                 curr_score = neighbour_scores[i];
                 index = i;
             }
+            cout << "NEIGHBOUR " << i << "\n\n";
             printGameState(neighbours[i]);
-            cout << "\nScore: " << neighbour_scores[i] << "\n";
+            cout << "\nSCORE OF NEIGHBOUR " << i << ": " << neighbour_scores[i] << "\n\n";
         }
         if (index == -1) {
             cout << "----------------------------------------\nFOUND LOCAL MAXIMUM\n";
             printGameState(curr);
+            cout << "With Score : " << curr_score << "\n";
             cout << "----------------------------------------\n";
             break;
         }
+        cout << "NEIGBOUR " << index << " CHOSEN\n\n";
         for (int i = 0; i < 16; i++) {
             curr.puzzle[i] = neighbours[index].puzzle[i];
         }
         curr.blank = neighbours[index].blank;
+        cout << "--------------------------------------------\n";
     }
 
     return 0;
@@ -367,7 +381,6 @@ double solve(MNPuzzleState<4,4> state){
     t2.StartTimer();
     astar.GetPath(&mnp, state, goal, statepath);
     t2.EndTimer();
-    printf("Problem solved; %1.2f elapsed\n" , t2.GetElapsedTime());
     return t2.GetElapsedTime();
 }
 
