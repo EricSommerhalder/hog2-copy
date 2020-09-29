@@ -211,39 +211,41 @@ int main(int argc, char* argv[]) {
         cout << "USAGE: ./hardInstanceSearch [instance number (between 0 and 99)]\n";
         return 0;
     }
-    curr = GetSTPInstance(jj);
+        curr = GetSTPInstance(jj);
 
-    double curr_score = getScore(curr);
-    while (true) {
-        cout << "CURRENT GAME STATE\n\n";
-        printGameState(curr);
-        cout << "\nCURRENT SCORE: " << curr_score << "\n\n";
-        MNPuzzleState<4, 4> *neighbours = getNeighbours(curr);
-        double *neighbour_scores = getNeighbourScores(neighbours);
-        int index = -1;
-        for (int i = 0; i < 4; i++) {
-            if (neighbour_scores[i] > curr_score) {
-                curr_score = neighbour_scores[i];
-                index = i;
-            }
-            cout << "NEIGHBOUR " << i << "\n\n";
-            printGameState(neighbours[i]);
-            cout << "\nSCORE OF NEIGHBOUR " << i << ": " << neighbour_scores[i] << "\n\n";
-        }
-        if (index == -1) {
-            cout << "----------------------------------------\nFOUND LOCAL MAXIMUM\n";
+        double curr_score = getScore(curr);
+        while (true) {
+
+            cout << "CURRENT GAME STATE\n\n";
             printGameState(curr);
-            cout << "With Score : " << curr_score << "\n";
-            cout << "----------------------------------------\n";
-            break;
+            cout << "\nCURRENT SCORE: " << curr_score << "\n\n";
+            MNPuzzleState<4, 4> *neighbours = getNeighbours(curr);
+            double *neighbour_scores = getNeighbourScores(neighbours);
+            int index = -1;
+            for (int i = 0; i < 4; i++) {
+                if (neighbour_scores[i] > curr_score) {
+                    curr_score = neighbour_scores[i];
+                    index = i;
+                }
+                cout << "NEIGHBOUR " << i << "\n\n";
+                printGameState(neighbours[i]);
+                cout << "\nSCORE OF NEIGHBOUR " << i << ": " << neighbour_scores[i] << "\n\n";
+            }
+            if (index == -1) {
+                cout << "----------------------------------------\nFOUND LOCAL MAXIMUM\n";
+                printGameState(curr);
+                cout << "With Score : " << curr_score << "\n";
+                cout << "----------------------------------------\n";
+                break;
+            }
+            cout << "NEIGBOUR " << index << " CHOSEN\n\n";
+            for (int i = 0; i < 16; i++) {
+                curr.puzzle[i] = neighbours[index].puzzle[i];
+            }
+            curr.blank = neighbours[index].blank;
+            cout << "--------------------------------------------\n";
         }
-        cout << "NEIGBOUR " << index << " CHOSEN\n\n";
-        for (int i = 0; i < 16; i++) {
-            curr.puzzle[i] = neighbours[index].puzzle[i];
-        }
-        curr.blank = neighbours[index].blank;
-        cout << "--------------------------------------------\n";
-    }
+
 
     return 0;
 }
@@ -319,7 +321,7 @@ MNPuzzleState<4,4> getDownNeighbour(MNPuzzleState<4,4> state) {
     return r;
 }
 
- double * getNeighbourScores(MNPuzzleState<4,4>* arr) {
+double * getNeighbourScores(MNPuzzleState<4,4>* arr) {
     double* r = new double[4];
     for (int i = 0; i <4; i++){
         r[i] = getScore(arr[i]);
@@ -336,29 +338,33 @@ double getScore(MNPuzzleState<4,4> state) {
 void setHeuristics() {
     MNPuzzleState<4, 4> goal;
     std::vector<int> p1 = {0, 1, 2, 3, 4, 5, 6, 7};
+    //std::vector<int> p2 = {0, 8, 9, 10, 11, 12, 13, 14, 15};
     std::vector<int> p2 = {0, 8, 9, 12, 13};
-    std::vector<int> p3 = {0, 10, 11, 14, 15};
+    std::vector<int> p3 = {0, 11, 12, 13, 14, 15};
 
-    pdb2 = new LexPermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>>(&mnp, goal, p2);
     pdb3 = new LexPermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>>(&mnp, goal, p3);
+    pdb2 = new LexPermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>>(&mnp, goal, p2);
     pdb1 = new LexPermutationPDB<MNPuzzleState<4, 4>, slideDir, MNPuzzle<4, 4>>(&mnp, goal, p1);
     if (pdb1->Load(prefix) == false)
     {
+        cout << "No pdb 1 found\n";
         pdb1->BuildPDB(goal, std::thread::hardware_concurrency());
         pdb1->Save(prefix);
     }
     if (pdb2->Load(prefix) == false)
     {
+        cout << "No pdb 2 found\n" ;
         pdb2->BuildPDB(goal, std::thread::hardware_concurrency());
         pdb2->Save(prefix);
     }
     if (pdb3->Load(prefix) == false)
     {
+        cout << "No pdb 3 found\n" ;
         pdb3->BuildPDB(goal, std::thread::hardware_concurrency());
         pdb3->Save(prefix);
     }
-
     h.lookups.resize(0);
+    //h.lookups.push_back({kAddNode, 1, 2});
     h.lookups.push_back({kMaxNode, 1, 4});
     h.lookups.push_back({kLeafNode, 0, 0});
     h.lookups.push_back({kLeafNode, 1, 1});
@@ -386,6 +392,7 @@ double solve(MNPuzzleState<4,4> state){
 
 void printGameState(MNPuzzleState<4,4> state) {
     if (state.blank == -1){
+        cout << "\n NO STATE \n";
         return;
     }
     cout << '\n';
